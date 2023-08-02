@@ -51,20 +51,25 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       delete hdrs[":scheme"];
       delete hdrs[":authority"];
       delete hdrs[":path"];
+      delete hdrs["keep-alive"];
+      hdrs["connection"] = "close";
       var options = {
         hostname: (secureHostname && req.socket.encrypted) ? secureHostname : hostname,
         port: (secureHostname && req.socket.encrypted) ? securePort : port,
         path: req.url,
         method: req.method,
         headers: hdrs,
+        joinDuplicateHeaders: true,
         rejectUnauthorized: false
       };
       var proxy = ((secureHostname && req.socket.encrypted) ? https : http).request(options, function(sres) {
         serverconsole.resmessage("Connected to back-end!");
         delete sres.headers["connection"];
         delete sres.headers["Connection"];
-        delete sres.headers["Transfer-Encoding"];
         delete sres.headers["transfer-encoding"];
+        delete sres.headers["Transfer-Encoding"];
+        delete sres.headers["keep-alive"];
+        delete sres.headers["Keep-Alive"];
         res.writeHead(sres.statusCode, sres.headers);
         sres.pipe(res, {
           end: true
