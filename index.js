@@ -1,4 +1,5 @@
 var fs = require("fs");
+var os = require("os");
 var http = require("http");
 var https = require("https");
 
@@ -34,7 +35,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       if (!port) port = 80;
       if (!securePort && secureHostname) securePort = 443;
       if (!hostname) {
-        callServerError(500, "reverse-proxy-mod/1.0.2", new Error("Proxy server is misconfigured. Hostname property is missing."));
+        callServerError(500, "reverse-proxy-mod/1.0.4", new Error("Proxy server is misconfigured. Hostname property is missing."));
         return;
       }
       try {
@@ -71,23 +72,33 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         delete sres.headers["keep-alive"];
         delete sres.headers["Keep-Alive"];
         res.writeHead(sres.statusCode, sres.headers);
-        sres.pipe(res, {
-          end: true
+        sres.pipe(res);
+        res.prependListener("end", function() {
+          try {
+            sres.end();
+          } catch(ex) {}
         });
       });
       proxy.on("error", (ex) => {
         try {
-          if (ex.code == "ETIMEDOUT") {
-            callServerError(504, "reverse-proxy-mod/1.0.2", ex); //Server error
+          if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
+            callServerError(503, "reverse-proxy-mod/1.0.4", ex); //Server error
+          } else if (ex.code == "ETIMEDOUT") {
+            callServerError(504, "reverse-proxy-mod/1.0.4", ex); //Server error
           } else {
-            callServerError(502, "reverse-proxy-mod/1.0.2", ex); //Server error
+            callServerError(502, "reverse-proxy-mod/1.0.4", ex); //Server error
           }
         } catch (ex) {}
         serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
       });
-      req.pipe(proxy, {
-        end: true
+      req.pipe(proxy);
+      req.prependListener("end", function() {
+        try {
+          proxy.end();
+        } catch(ex) {}
       });
+    } else if ((href == "/reverse-proxy-config.json" || (os.platform() == "win32" && href.toLowerCase() == "/reverse-proxy-config.json")) && path.normalize(__dirname + "/../../..") == process.cwd()) {
+      callServerError(403, "reverse-proxy-mod/1.02");
     } else {
       elseCallback();
     }
