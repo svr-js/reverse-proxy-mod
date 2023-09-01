@@ -13,10 +13,15 @@ function Mod() {}
 Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd, href, ext, uobject, search, defaultpage, users, page404, head, foot, fd, elseCallback, configJSON, callServerError, getCustomHeaders, origHref, redirect, parsePostData) {
   return function () {
     var hostnames = Object.keys(proxyConfig);
+    var isPath = false;
     var matchingHostname = null;
     for (var i = 0; i < hostnames.length; i++) {
       if (hostnames[i] == "*") {
         matchingHostname = "*";
+        break;
+      } else if (hostnames[i][0] == "/" && (href == hostnames[i] || href.indexOf(hostnames[i] + "/") == 0)) {
+        matchingHostname = hostnames[i];
+        isPath = true;
         break;
       } else if (req.headers.host && hostnames[i].indexOf("*.") == 0 && hostnames[i] != "*.") {
         var hostnamesRoot = hostnames[i].substr(2);
@@ -37,7 +42,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       if (!port) port = 80;
       if (!securePort && secureHostname) securePort = 443;
       if (!hostname) {
-        callServerError(500, "reverse-proxy-mod/1.1.0", new Error("Proxy server is misconfigured. Hostname property is missing."));
+        callServerError(500, "reverse-proxy-mod/1.1.1", new Error("Proxy server is misconfigured. Hostname property is missing."));
         return;
       }
       try {
@@ -46,6 +51,15 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
           res.removeHeader(x[i]);
         }
       } catch (ex) {}
+      var preparedPath = req.url;
+      if(isPath) {
+        if(preparedPath == matchingHostname) {
+          preparedPath = "/";
+        } else {
+          preparedPath = preparedPath.replace(matchingHostname + "/","");
+          if(preparedPath == "") preparedPath = "/";
+        }
+      }
       var hdrs = JSON.parse(JSON.stringify(req.headers));
       hdrs["x-forwarded-for"] = req.socket.remoteAddress;
       hdrs["x-forwarded-proto"] = req.socket.encrypted ? "https" : "http";
@@ -64,7 +78,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         }, function () {
           serverconsole.resmessage("Connected to back-end!");
           socket.pipe(res.socket);
-          socket.write(req.method + " " + req.url + " HTTP/1.1\r\n");
+          socket.write(req.method + " " + preparedPath + " HTTP/1.1\r\n");
           Object.keys(hdrs).forEach(function (headerName) {
             var header = hdrs[headerName];
             if (typeof header === "object") {
@@ -80,11 +94,11 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         }).on("error", (ex) => {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.0", ex); //Server error                      
+              callServerError(503, "reverse-proxy-mod/1.1.1", ex); //Server error                      
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.0", ex); //Server error                      
+              callServerError(504, "reverse-proxy-mod/1.1.1", ex); //Server error                      
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.0", ex); //Server error                       
+              callServerError(502, "reverse-proxy-mod/1.1.1", ex); //Server error                       
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS         
@@ -94,7 +108,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         var options = {
           hostname: (secureHostname && req.socket.encrypted) ? secureHostname : hostname,
           port: (secureHostname && req.socket.encrypted) ? securePort : port,
-          path: req.url,
+          path: preparedPath,
           method: req.method,
           headers: hdrs,
           joinDuplicateHeaders: true,
@@ -121,11 +135,11 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         proxy.on("error", (ex) => {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.0", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.1", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.0", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.1", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.0", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.1", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -138,7 +152,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         });
       }
     } else if ((href == "/reverse-proxy-config.json" || (os.platform() == "win32" && href.toLowerCase() == "/reverse-proxy-config.json")) && path.normalize(__dirname + "/../../..") == process.cwd()) {
-      callServerError(403, "reverse-proxy-mod/1.1.0");
+      callServerError(403, "reverse-proxy-mod/1.1.1");
     } else {
       elseCallback();
     }
