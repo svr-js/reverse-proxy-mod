@@ -42,7 +42,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       if (!port) port = 80;
       if (!securePort && secureHostname) securePort = 443;
       if (!hostname) {
-        callServerError(500, "reverse-proxy-mod/1.1.1", new Error("Proxy server is misconfigured. Hostname property is missing."));
+        callServerError(500, "reverse-proxy-mod/1.1.2", new Error("Proxy server is misconfigured. Hostname property is missing."));
         return;
       }
       try {
@@ -94,14 +94,14 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         }).on("error", (ex) => {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.1", ex); //Server error                      
+              callServerError(503, "reverse-proxy-mod/1.1.2", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.1", ex); //Server error                      
+              callServerError(504, "reverse-proxy-mod/1.1.2", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.1", ex); //Server error                       
+              callServerError(502, "reverse-proxy-mod/1.1.2", ex); //Server error
             }
           } catch (ex) {}
-          serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS         
+          serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
         });
       } else {
         if (String(hdrs["connection"]).toLowerCase() != "upgrade") hdrs["connection"] = "close";
@@ -124,22 +124,26 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
           delete sres.headers["Transfer-Encoding"];
           delete sres.headers["keep-alive"];
           delete sres.headers["Keep-Alive"];
-          res.writeHead(sres.statusCode, sres.headers);
-          sres.pipe(res);
-          res.prependListener("end", function () {
-            try {
-              sres.end();
-            } catch (ex) {}
-          });
+          try {
+            res.writeHead(sres.statusCode, sres.headers);
+            sres.pipe(res);
+            res.prependListener("end", function () {
+              try {
+                sres.end();
+              } catch (ex) {}
+            });
+          } catch (ex) {
+            callServerError(502, "reverse-proxy-mod/1.1.2", ex); //Server error
+          }
         });
-        proxy.on("error", (ex) => {
+        proxy.on("error", function (ex) {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.1", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.2", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.1", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.2", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.1", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.2", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -152,7 +156,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         });
       }
     } else if ((href == "/reverse-proxy-config.json" || (os.platform() == "win32" && href.toLowerCase() == "/reverse-proxy-config.json")) && path.normalize(__dirname + "/../../..") == process.cwd()) {
-      callServerError(403, "reverse-proxy-mod/1.1.1");
+      callServerError(403, "reverse-proxy-mod/1.1.2");
     } else {
       elseCallback();
     }
