@@ -56,7 +56,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         if(preparedPath == matchingHostname) {
           preparedPath = "/";
         } else {
-          preparedPath = preparedPath.replace(matchingHostname + "/","");
+          preparedPath = preparedPath.replace(matchingHostname.substring(1) + "/","");
           if(preparedPath == "") preparedPath = "/";
         }
       }
