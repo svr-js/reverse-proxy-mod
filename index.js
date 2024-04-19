@@ -42,7 +42,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       if (!port) port = 80;
       if (!securePort && secureHostname) securePort = 443;
       if (!hostname) {
-        callServerError(500, "reverse-proxy-mod/1.1.3", new Error("Proxy server is misconfigured. Hostname property is missing."));
+        callServerError(500, "reverse-proxy-mod/1.1.4", new Error("Proxy server is misconfigured. Hostname property is missing."));
         return;
       }
       try {
@@ -56,7 +56,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         if(preparedPath == matchingHostname) {
           preparedPath = "/";
         } else {
-          preparedPath = preparedPath.replace(matchingHostname + "/","");
+          preparedPath = preparedPath.replace(matchingHostname.substring(1) + "/","");
           if(preparedPath == "") preparedPath = "/";
         }
       }
@@ -94,11 +94,11 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         }).on("error", (ex) => {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.4", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.4", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -133,17 +133,17 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
               } catch (ex) {}
             });
           } catch (ex) {
-            callServerError(502, "reverse-proxy-mod/1.1.3", ex); //Server error
+            callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
           }
         });
         proxy.on("error", function (ex) {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.4", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.4", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.3", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -156,7 +156,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         });
       }
     } else if ((href == "/reverse-proxy-config.json" || (os.platform() == "win32" && href.toLowerCase() == "/reverse-proxy-config.json")) && path.normalize(__dirname + "/../../..") == process.cwd()) {
-      callServerError(403, "reverse-proxy-mod/1.1.3");
+      callServerError(403, "reverse-proxy-mod/1.1.4");
     } else {
       elseCallback();
     }
