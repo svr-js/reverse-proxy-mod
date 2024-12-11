@@ -1,4 +1,4 @@
-svar fs = require("fs");
+var fs = require("fs");
 var os = require("os");
 var http = require("http");
 var https = require("https");
