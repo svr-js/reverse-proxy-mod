@@ -1,4 +1,4 @@
-var fs = require("fs");
+svar fs = require("fs");
 var os = require("os");
 var http = require("http");
 var https = require("https");
@@ -39,18 +39,21 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
       var port = proxyConfig[matchingHostname].port;
       var secureHostname = proxyConfig[matchingHostname].secureHostname;
       var securePort = proxyConfig[matchingHostname].securePort;
+      var removeCustomHeaders = proxyConfig[matchingHostname].removeCustomHeaders;
       if (!port) port = 80;
       if (!securePort && secureHostname) securePort = 443;
       if (!hostname) {
-        callServerError(500, "reverse-proxy-mod/1.1.4", new Error("Proxy server is misconfigured. Hostname property is missing."));
+        callServerError(500, "reverse-proxy-mod/1.1.5", new Error("Proxy server is misconfigured. Hostname property is missing."));
         return;
       }
-      try {
-        var x = res.getHeaderNames();
-        for (var i = 0; i < x.length; i++) {
-          res.removeHeader(x[i]);
-        }
-      } catch (ex) {}
+      if (removeCustomHeaders === undefined || removeCustomHeaders) {
+        try {
+          var x = res.getHeaderNames();
+          for (var i = 0; i < x.length; i++) {
+            res.removeHeader(x[i]);
+          }
+        } catch (ex) {}
+      }
       var preparedPath = req.url;
       if(isPath) {
         if(preparedPath == matchingHostname) {
@@ -94,11 +97,11 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         }).on("error", (ex) => {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.5", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.5", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.5", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -133,17 +136,17 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
               } catch (ex) {}
             });
           } catch (ex) {
-            callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
+            callServerError(502, "reverse-proxy-mod/1.1.5", ex); //Server error
           }
         });
         proxy.on("error", function (ex) {
           try {
             if (ex.code == "ENOTFOUND" || ex.code == "EHOSTUNREACH" || ex.code == "ECONNREFUSED") {
-              callServerError(503, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(503, "reverse-proxy-mod/1.1.5", ex); //Server error
             } else if (ex.code == "ETIMEDOUT") {
-              callServerError(504, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(504, "reverse-proxy-mod/1.1.5", ex); //Server error
             } else {
-              callServerError(502, "reverse-proxy-mod/1.1.4", ex); //Server error
+              callServerError(502, "reverse-proxy-mod/1.1.5", ex); //Server error
             }
           } catch (ex) {}
           serverconsole.errmessage("Client fails to recieve content."); //Log into SVR.JS
@@ -156,7 +159,7 @@ Mod.prototype.callback = function callback(req, res, serverconsole, responseEnd,
         });
       }
     } else if ((href == "/reverse-proxy-config.json" || (os.platform() == "win32" && href.toLowerCase() == "/reverse-proxy-config.json")) && path.normalize(__dirname + "/../../..") == process.cwd()) {
-      callServerError(403, "reverse-proxy-mod/1.1.4");
+      callServerError(403, "reverse-proxy-mod/1.1.5");
     } else {
       elseCallback();
     }
